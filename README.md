@@ -23,7 +23,7 @@ Smart single-command interface: pass a URL to shorten it, a file to upload it, a
 
 Download from [Releases](https://github.com/Lifemotion/rwlk/releases) -- Windows x64, Linux x64, Linux ARM64.
 
-**As a dotnet tool** (requires .NET 10):
+**As a dotnet tool** (requires .NET 10) -- installs globally, available from any directory:
 
 Install .NET 10 if not already present:
 
