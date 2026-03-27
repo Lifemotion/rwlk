@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>rwlk</AssemblyName>
+    <ApplicationIcon>rwlk.ico</ApplicationIcon>
 
     <!-- dotnet tool -->
     <PackAsTool>true</PackAsTool>
@@ -18,5 +19,9 @@
     <PublishAot>true</PublishAot>
     <OptimizationPreference>Size</OptimizationPreference>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="rwlk.ico" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 
 </Project>

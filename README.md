@@ -56,6 +56,8 @@ rwlk <file>             Upload a file (anonymous, max 100 KB, 30 days)
 rwlk <slug>             Open a link / download a file by slug
 rwlk <key>              Download a file by file key
 rwlk <key> <file>       Upload a file by file key
+rwlk install            Add to file manager context menu
+rwlk uninstall          Remove from file manager context menu
 ```
 
 The CLI detects what you mean automatically:
@@ -91,6 +93,21 @@ $ rwlk 9fec5f2cbc68 backup.tar.gz
 $ rwlk 9fec5f2cbc68
 Downloaded: backup.tar.gz
 ```
+
+### File manager integration
+
+Add "Share with rwlk" to your file manager's right-click menu:
+
+```bash
+rwlk install      # add context menu entry
+rwlk uninstall    # remove it
+```
+
+**Windows:** adds to Explorer context menu (via registry, no admin required).
+
+**Linux:** auto-detects and installs for Nautilus (GNOME), Dolphin (KDE), and Nemo (Cinnamon).
+
+Right-clicking a file and selecting "Share with rwlk" uploads it and copies the link to clipboard.
 
 ### File keys
 
