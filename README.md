@@ -39,6 +39,27 @@ rwlk abc123def456 backup.tar.gz
 rwlk abc123def456
 ```
 
+## API
+
+You can use the API directly without the CLI:
+
+```bash
+# Shorten a URL
+curl -F "url=https://example.com/long-url" https://rwlk.net/api/links
+
+# Shorten a URL (one-time)
+curl -F "url=https://example.com/long-url" -F "mode=onetime" https://rwlk.net/api/links
+
+# Upload a file (anonymous, max 100 KB, 30 days)
+curl -F "file=@photo.jpg" https://rwlk.net/api/links
+
+# Upload a file using a file key
+curl -F "file=@backup.tar.gz" https://rwlk.net/api/file/abc123def456
+
+# Download a file using a file key
+curl -O -J https://rwlk.net/api/file/abc123def456
+```
+
 ## Configuration
 
 | Variable | Default | Description |
