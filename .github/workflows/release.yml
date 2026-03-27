@@ -58,7 +58,7 @@ jobs:
           sudo apt-get install -y gcc-aarch64-linux-gnu zlib1g-dev:arm64
 
       - name: Publish
-        run: dotnet publish -c Release -r ${{ matrix.rid }} -o out
+        run: dotnet publish -c Release -r ${{ matrix.rid }} -o out -p:StripSymbols=false
 
       - name: Create archive
         shell: bash
