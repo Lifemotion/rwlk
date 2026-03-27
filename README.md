@@ -19,15 +19,32 @@ Smart single-command interface: pass a URL to shorten it, a file to upload it, a
 
 ## Installation
 
-**As a dotnet tool** (requires .NET 10):
-
-```bash
-dotnet tool install -g rwlk
-```
-
 **As a standalone binary** (no .NET required):
 
 Download from [Releases](https://github.com/Lifemotion/rwlk/releases) -- Windows x64, Linux x64, Linux ARM64.
+
+**As a dotnet tool** (requires .NET 10):
+
+Install .NET 10 if not already present:
+
+- **Windows:** `winget install Microsoft.DotNet.SDK.10`
+- **Linux:**
+
+```bash
+curl -fsSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 10.0
+echo 'export DOTNET_ROOT=$HOME/.dotnet' >> ~/.bashrc
+echo 'export PATH=$PATH:$DOTNET_ROOT:$DOTNET_ROOT/tools' >> ~/.bashrc
+source ~/.bashrc
+```
+
+Then clone and install:
+
+```bash
+git clone https://github.com/Lifemotion/rwlk.git
+cd rwlk
+dotnet pack
+dotnet tool install -g --add-source bin/Release rwlk
+```
 
 ---
 
@@ -116,27 +133,14 @@ Rate limit: **10 requests per minute** per IP.
 
 ---
 
-## Building from source
+## Building native AOT binaries
 
 ```bash
 git clone https://github.com/Lifemotion/rwlk.git
 cd rwlk
-dotnet build
-```
-
-**Publish native AOT binary:**
-
-```bash
 dotnet publish -c Release -r win-x64
 dotnet publish -c Release -r linux-x64
 dotnet publish -c Release -r linux-arm64
-```
-
-**Install as dotnet tool from source:**
-
-```bash
-dotnet pack
-dotnet tool install -g --add-source bin/Release rwlk
 ```
 
 ## License
