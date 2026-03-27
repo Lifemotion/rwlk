@@ -39,11 +39,21 @@ jobs:
         if: matrix.rid == 'linux-arm64'
         run: |
           sudo dpkg --add-architecture arm64
-          sudo bash -c 'cat > /etc/apt/sources.list.d/arm64.list << EOF
-          deb [arch=arm64] http://ports.ubuntu.com/ noble main restricted universe
-          deb [arch=arm64] http://ports.ubuntu.com/ noble-updates main restricted universe
-          EOF'
-          sudo sed -i 's/^deb /deb [arch=amd64] /' /etc/apt/sources.list
+          # Replace all sources with arch-qualified versions
+          sudo rm -f /etc/apt/sources.list.d/arm64.list
+          sudo bash -c 'cat > /etc/apt/sources.list.d/ports-arm64.sources << SRCEOF
+          Types: deb
+          URIs: http://ports.ubuntu.com/ubuntu-ports/
+          Suites: noble noble-updates noble-security
+          Components: main restricted universe
+          Architectures: arm64
+          SRCEOF'
+          # Pin existing sources to amd64 only
+          for f in /etc/apt/sources.list.d/ubuntu.sources; do
+            if [ -f "$f" ] && ! grep -q "Architectures:" "$f"; then
+              sudo sed -i '/^Types:/a Architectures: amd64' "$f"
+            fi
+          done
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu zlib1g-dev:arm64
 
