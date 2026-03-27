@@ -1,0 +1,60 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - rid: win-x64
+            artifact: rwlk.exe
+          - rid: linux-x64
+            artifact: rwlk
+          - rid: linux-arm64
+            artifact: rwlk
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish
+        run: dotnet publish -c Release -r ${{ matrix.rid }} --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true -o out
+
+      - name: Rename artifact
+        run: |
+          cd out
+          if [ "${{ matrix.rid }}" = "win-x64" ]; then
+            mv rwlk.exe rwlk-${{ matrix.rid }}.exe
+          else
+            mv rwlk rwlk-${{ matrix.rid }}
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rwlk-${{ matrix.rid }}
+          path: out/rwlk-*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: rwlk-*
+          generate_release_notes: true
