@@ -10,16 +10,23 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
           - rid: win-x64
-            artifact: rwlk.exe
+            os: windows-latest
+            binary: rwlk.exe
+            archive: rwlk-win-x64.zip
           - rid: linux-x64
-            artifact: rwlk
+            os: ubuntu-latest
+            binary: rwlk
+            archive: rwlk-linux-x64.tar.gz
           - rid: linux-arm64
-            artifact: rwlk
+            os: ubuntu-latest
+            binary: rwlk
+            archive: rwlk-linux-arm64.tar.gz
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v4
@@ -28,22 +35,35 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Publish
-        run: dotnet publish -c Release -r ${{ matrix.rid }} --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true -o out
+      - name: Install cross-compilation tools
+        if: matrix.rid == 'linux-arm64'
+        run: |
+          sudo dpkg --add-architecture arm64
+          sudo bash -c 'cat > /etc/apt/sources.list.d/arm64.list << EOF
+          deb [arch=arm64] http://ports.ubuntu.com/ noble main restricted universe
+          deb [arch=arm64] http://ports.ubuntu.com/ noble-updates main restricted universe
+          EOF'
+          sudo sed -i 's/^deb /deb [arch=amd64] /' /etc/apt/sources.list
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu zlib1g-dev:arm64
 
-      - name: Rename artifact
+      - name: Publish
+        run: dotnet publish -c Release -r ${{ matrix.rid }} -o out
+
+      - name: Create archive
+        shell: bash
         run: |
           cd out
-          if [ "${{ matrix.rid }}" = "win-x64" ]; then
-            mv rwlk.exe rwlk-${{ matrix.rid }}.exe
+          if [[ "${{ matrix.archive }}" == *.zip ]]; then
+            7z a ../${{ matrix.archive }} ${{ matrix.binary }}
           else
-            mv rwlk rwlk-${{ matrix.rid }}
+            tar czf ../${{ matrix.archive }} ${{ matrix.binary }}
           fi
 
       - uses: actions/upload-artifact@v4
         with:
-          name: rwlk-${{ matrix.rid }}
-          path: out/rwlk-*
+          name: ${{ matrix.archive }}
+          path: ${{ matrix.archive }}
 
   release:
     needs: build
