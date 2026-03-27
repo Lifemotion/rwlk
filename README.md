@@ -4,13 +4,13 @@ CLI for [rwlk.net](https://rwlk.net) — short links and file sharing.
 
 ## Install
 
-Download a binary from [Releases](../../releases) and put it in your PATH.
-
-Or install as a dotnet tool:
+**Recommended:** install as a [dotnet tool](https://learn.microsoft.com/dotnet/core/tools/global-tools) (requires .NET 10+ runtime):
 
 ```bash
 dotnet tool install --global rwlk
 ```
+
+Alternatively, download a self-contained binary from [Releases](../../releases) — no runtime needed.
 
 ## Usage
 
