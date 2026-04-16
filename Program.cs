@@ -1,13 +1,15 @@
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
 
 var server = Environment.GetEnvironmentVariable("RWLK_SERVER") ?? "https://rwlk.net";
 
-// Parse --share flag (used when invoked from file manager context menu)
+// --share is set by the file manager context menu; -x/--extract unpacks downloaded zips.
 var shareMode = args.Any(a => a == "--share");
-var cliArgs = shareMode ? args.Where(a => a != "--share").ToArray() : args;
+var extractMode = args.Any(a => a is "-x" or "--extract");
+var cliArgs = args.Where(a => a is not "--share" and not "-x" and not "--extract").ToArray();
 
 // Handle install/uninstall (no server connection needed)
 if (cliArgs.Length == 1 && cliArgs[0] == "install")
@@ -50,6 +52,10 @@ if (cliArgs.Length == 1)
     {
         result = await UploadAnonymous(arg);
     }
+    else if (Directory.Exists(arg))
+    {
+        result = await UploadDirectory(UploadAnonymous, arg);
+    }
     else if (IsFileKey(arg))
     {
         await DownloadByKey(arg);
@@ -68,9 +74,17 @@ else if (cliArgs.Length == 2)
     {
         Console.Error.WriteLine($"Invalid file key: {key}");
     }
-    else
+    else if (File.Exists(filePath))
     {
         result = await UploadByKey(key, filePath);
+    }
+    else if (Directory.Exists(filePath))
+    {
+        result = await UploadDirectory(p => UploadByKey(key, p), filePath);
+    }
+    else
+    {
+        Console.Error.WriteLine($"File or directory not found: {filePath}");
     }
 }
 else
@@ -143,9 +157,12 @@ async Task OpenSlug(string slug)
     if (resp.Content.Headers.ContentDisposition?.FileName != null)
     {
         var fileName = resp.Content.Headers.ContentDisposition.FileName.Trim('"');
-        await using var fs = File.Create(fileName);
-        await resp.Content.CopyToAsync(fs);
+        await using (var fs = File.Create(fileName))
+        {
+            await resp.Content.CopyToAsync(fs);
+        }
         Console.WriteLine($"Downloaded: {fileName}");
+        if (extractMode) ExtractIfZip(fileName);
         return;
     }
 
@@ -199,6 +216,41 @@ async Task<string?> UploadByKey(string key, string filePath)
     return body;
 }
 
+async Task<string?> UploadDirectory(Func<string, Task<string?>> upload, string dirPath)
+{
+    var dirName = new DirectoryInfo(dirPath).Name;
+    var tmpDir = Path.Combine(Path.GetTempPath(), $"rwlk-{Guid.NewGuid():N}");
+    Directory.CreateDirectory(tmpDir);
+    var zipPath = Path.Combine(tmpDir, $"{dirName}.zip");
+    try
+    {
+        ZipFile.CreateFromDirectory(dirPath, zipPath, CompressionLevel.Optimal, includeBaseDirectory: false);
+        return await upload(zipPath);
+    }
+    finally
+    {
+        try { Directory.Delete(tmpDir, recursive: true); } catch { }
+    }
+}
+
+void ExtractIfZip(string zipPath)
+{
+    if (!zipPath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+        return;
+
+    var extractDir = Path.GetFileNameWithoutExtension(zipPath);
+    try
+    {
+        ZipFile.ExtractToDirectory(zipPath, extractDir, overwriteFiles: true);
+        File.Delete(zipPath);
+        Console.WriteLine($"Extracted to: {extractDir}/");
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"Extraction failed: {ex.Message}");
+    }
+}
+
 async Task DownloadByKey(string key)
 {
     var resp = await http.GetAsync($"/api/file/{key}");
@@ -210,9 +262,12 @@ async Task DownloadByKey(string key)
     }
 
     var fileName = resp.Content.Headers.ContentDisposition?.FileName?.Trim('"') ?? key;
-    await using var fs = File.Create(fileName);
-    await resp.Content.CopyToAsync(fs);
+    await using (var fs = File.Create(fileName))
+    {
+        await resp.Content.CopyToAsync(fs);
+    }
     Console.WriteLine($"Downloaded: {fileName}");
+    if (extractMode) ExtractIfZip(fileName);
 }
 
 void CopyToClipboard(string text)
@@ -412,12 +467,17 @@ void PrintUsage()
 
         Usage:
           rwlk <url>                Shorten a URL
-          rwlk <slug>              Open a link / download a file by slug
-          rwlk <file>              Upload a file anonymously (max 100 KB, 30 days)
-          rwlk <key> <file>        Upload a file using a file key
-          rwlk <key>               Download a file using a file key
-          rwlk install             Add to file manager context menu
-          rwlk uninstall           Remove from file manager context menu
+          rwlk <slug>               Open a link / download a file by slug
+          rwlk <file>               Upload a file anonymously (max 100 KB, 30 days)
+          rwlk <folder>             Zip and upload a folder anonymously
+          rwlk <key> <file>         Upload a file using a file key
+          rwlk <key> <folder>       Zip and upload a folder using a file key
+          rwlk <key>                Download a file using a file key
+          rwlk install              Add to file manager context menu
+          rwlk uninstall            Remove from file manager context menu
+
+        Flags:
+          -x, --extract             Extract downloaded .zip archives
 
         Environment variables:
           RWLK_SERVER  Server URL (default: https://rwlk.net)
