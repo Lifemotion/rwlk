@@ -12,7 +12,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>rwlk</ToolCommandName>
     <PackageId>rwlk</PackageId>
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
     <Description>CLI for rwlk.net — short links and file sharing</Description>
 
     <!-- Native AOT for smaller self-contained binaries -->
